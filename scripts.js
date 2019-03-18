@@ -296,7 +296,7 @@ function onClickTransaction() {
 
 function maxValue() {
     var tType = transactionTypes[document.getElementById("transactionTypeSelect").selectedIndex].type;
-    var TCurent = currents[document.getElementById("currentSelect").selectedIndex].type;
+    var TCurent = currents[document.getElementById("currentSelect").selectedIndex + 1].type;
     var Tvalue = document.getElementById("transactionValue");
     Tvalue.max = balance[TCurent];
     Tvalue.value = 0;
@@ -318,7 +318,8 @@ function init() {
     updateCurrents();
     formUIUpdate();
     getHistory();
-    setInterval(function() { updateDatas(); }, 10000);
+    setInterval(function() { updateDatas(); }, 15000);
+  
 }
 
 function updateDatas() {
