@@ -1,15 +1,30 @@
 var baseUrl = "https://obudai-api.azurewebsites.net/api";
+var cors = "https://obudai-api.azurewebsites.net/";
 var apiKey = "3D2ADF61-84D2-42A2-A715-A207B67A8CD8";
 var sites = ["main", "transactions", "settings"];
 var startPage = "main";
-var balance;
-var currentRateEth;
-var currentRateBtc;
-var currentRateXrp;
-var myChart1;
-var myChart2;
-var myChart3;
-let history;
+var balance = [{ usd: NaN, btc: NaN, eth:NaN, xrp:NaN}];
+var currentRates = [
+    {
+    type: "btc",
+    value: NaN,
+    history:{'1900-01-01 00:00':NaN,'1900-01-02 00:00':NaN,'1900-01-03 00:00':NaN,'1900-01-04 00:00':NaN,'1900-01-05 00:00':NaN,'1900-01-06 00:00':NaN,'1900-01-07 00:00':NaN,'1900-01-08 00:00':NaN,'1900-01-09 00:00':NaN,'1900-01-010 00:00':NaN}
+  },
+  {
+  type: "eth",
+  value: NaN,
+  history:{'1900-01-01 00:00':NaN,'1900-01-02 00:00':NaN,'1900-01-03 00:00':NaN,'1900-01-04 00:00':NaN,'1900-01-05 00:00':NaN,'1900-01-06 00:00':NaN,'1900-01-07 00:00':NaN,'1900-01-08 00:00':NaN,'1900-01-09 00:00':NaN,'1900-01-010 00:00':NaN}
+},
+  {
+  type: "xrp",
+  value: NaN,
+  history:{'1900-01-01 00:00':NaN,'1900-01-02 00:00':NaN,'1900-01-03 00:00':NaN,'1900-01-04 00:00':NaN,'1900-01-05 00:00':NaN,'1900-01-06 00:00':NaN,'1900-01-07 00:00':NaN,'1900-01-08 00:00':NaN,'1900-01-09 00:00':NaN,'1900-01-010 00:00':NaN}
+  }
+]
+var ethChart;
+var btcChart;
+var xrpChart;
+let history= [{symbol: "NaN", amount: "NaN", type: "NaN", createdAt:"NNaN"}];
 var currents = [
     {
         type: "usd",
@@ -70,7 +85,7 @@ function getStatus() {
     var xhr = new XMLHttpRequest();
 
     xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
+      if (xhr.status != 0 && this.readyState === 4) {
             console.log(this.responseText);
             return this.responseText;
         }
@@ -79,36 +94,40 @@ function getStatus() {
     xhr.setRequestHeader("X-Access-Token", apiKey);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("cache-control", "no-cache");
+    xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
     xhr.send(data);
 }
 
 function getExchangeRate(valuta) {
-
     var data = null;
     var xhr = new XMLHttpRequest();
-
     xhr.addEventListener("readystatechange", function () {
-            if (this.readyState === 4) {
-                console.log(this.responseText);
-                if (valuta === "eth") {
-                    currentRateEth = JSON.parse(this.response);
-                } else if (valuta === "btc") {
-                    currentRateBtc = JSON.parse(this.response);
-                } else if (valuta === "xrp") {
-                    currentRateXrp = JSON.parse(this.response);
-                }
-                if (currentRateXrp !== null && currentRateEth !== null && currentRateBtc !== null) {
-                    updateChart();
-                }
-            }
+            if (xhr.status != 0 && this.readyState === 4) {
+                  var  currentRate = JSON.parse(this.response);
+                  try {
+                    currentRates.find(obj => obj.type === valuta).value = currentRate.currentRate;
+                    currentRates.find(obj => obj.type === valuta).history = currentRate.history;
+                  } catch (e) {
 
+                  } finally {
+                    updateChart();                  
+                });
+                  }
+            }
         }
     );
-    xhr.open("GET", baseUrl + "/exchange/" + valuta);
-    xhr.setRequestHeader("X-Access-Token", apiKey);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.send(data);
+    try {
+      xhr.open("GET", baseUrl + "/exchange/" + valuta);
+      xhr.setRequestHeader("X-Access-Token", apiKey);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.setRequestHeader("cache-control", "no-cache");
+      xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
+      xhr.send(data);
+    } catch (e) {
+
+    } finally {
+     updateChart();
+    }
 
 }
 
@@ -118,17 +137,29 @@ function getBalance() {
     var xhr = new XMLHttpRequest();
 
     xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
-            console.log(this.responseText);
-            balance = JSON.parse(this.response);
+      if (xhr.status != 0 && this.readyState === 4) {
+          try {
+              balance = JSON.parse(this.response);
+          } catch (e) {
+
+          } finally {
             balanceUpdate();
+          }
+
         }
     });
-    xhr.open("GET", baseUrl + "/account");
-    xhr.setRequestHeader("X-Access-Token", apiKey);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.send(data);
+    try {
+      xhr.open("GET", baseUrl + "/account");
+      xhr.setRequestHeader("X-Access-Token", apiKey);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.setRequestHeader("cache-control", "no-cache");
+      xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
+      xhr.send(data);
+     } catch (e) {
+    } finally {
+
+    }
+
 }
 
 function getHistory() {
@@ -137,17 +168,28 @@ function getHistory() {
     var xhr = new XMLHttpRequest();
 
     xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
-            console.log(this.responseText);
-            history = JSON.parse(this.response);
-            historyUpdate();
+      if (xhr.status != 0 && xhr.status != 429 && this.readyState === 4) {
+          try {
+              history = JSON.parse(this.response);
+          } catch (e) {
+
+          } finally {
+              historyUpdate();
+          }
         }
     });
-    xhr.open("GET", baseUrl + "/account/history");
-    xhr.setRequestHeader("X-Access-Token", apiKey);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.send(data);
+    try {
+      xhr.open("GET", baseUrl + "/account/history");
+      xhr.setRequestHeader("X-Access-Token", apiKey);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.setRequestHeader("cache-control", "no-cache");
+      xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
+      xhr.send(data);
+    } catch (e) {
+
+    } finally {
+
+    }
 }
 
 function resetAccount() {
@@ -156,16 +198,23 @@ function resetAccount() {
 
 
     xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
+      if (xhr.status != 0 && this.readyState === 4) {
             console.log(this.responseText);
             getBalance();
         }
     });
-    xhr.open("POST", baseUrl + "/account/reset");
-    xhr.setRequestHeader("X-Access-Token", apiKey);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.send(data);
+    try {
+      xhr.open("POST", baseUrl + "/account/reset");
+      xhr.setRequestHeader("X-Access-Token", apiKey);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("cache-control", "no-cache");
+      xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
+      xhr.send(data);
+    } catch (e) {
+
+    } finally {
+
+    }
 }
 
 function purchase(curent, value) {
@@ -176,7 +225,7 @@ function purchase(curent, value) {
 
     var xhr = new XMLHttpRequest();
     xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
+      if (xhr.status != 0 && this.readyState === 4 ) {
             console.log(this.responseText);
             try {
                 alert(JSON.parse(this.responseText)["Message"]);
@@ -187,11 +236,18 @@ function purchase(curent, value) {
         }
     });
 
-    xhr.open("POST", baseUrl + "/account/purchase");
-    xhr.setRequestHeader("X-Access-Token", apiKey);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.send(data);
+    try {
+      xhr.open("POST", baseUrl + "/account/purchase");
+      xhr.setRequestHeader("X-Access-Token", apiKey);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("cache-control", "no-cache");
+      xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
+      xhr.send(data);
+    } catch (e) {
+      alert("no network");
+    } finally {
+
+    }
 
 }
 
@@ -203,7 +259,7 @@ function sell(curent, value) {
 
     var xhr = new XMLHttpRequest();
     xhr.addEventListener("readystatechange", function () {
-        if (this.readyState === 4) {
+      if (xhr.status != 0 && this.readyState === 4) {
             console.log(this.responseText);
             try {
                 alert(JSON.parse(this.responseText)["Message"]);
@@ -214,11 +270,18 @@ function sell(curent, value) {
         }
 
     });
-    xhr.open("POST", baseUrl + "/account/sell");
-    xhr.setRequestHeader("X-Access-Token", apiKey);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.setRequestHeader("cache-control", "no-cache");
-    xhr.send(data);
+    try {
+      xhr.open("POST", baseUrl + "/account/sell");
+      xhr.setRequestHeader("X-Access-Token", apiKey);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("cache-control", "no-cache");
+      xhr.setRequestHeader("Access-Control-Allow-Origin", cors);
+      xhr.send(data);
+    } catch (e) {
+
+    } finally {
+
+    }
 }
 
 function balanceUpdate() {
@@ -299,13 +362,17 @@ function maxValue() {
     var TCurent = currents[document.getElementById("currentSelect").selectedIndex + 1].type;
     var Tvalue = document.getElementById("transactionValue");
     Tvalue.max = balance[TCurent];
-    Tvalue.value = 0;
     if (tType === "buy") {
-        Tvalue.max = 100;
+        Tvalue.max = balance["usd"] / currentRates.find(obj => obj.type === TCurent).value ;
+        console.log(Tvalue.max);
+    }
+    if(Tvalue.value > Tvalue.max){
+        Tvalue.value = 0;
     }
 }
 
 function updateCurrents() {
+    getBalance();
     getExchangeRate("eth");
     getExchangeRate("btc");
     getExchangeRate("xrp");
@@ -319,7 +386,7 @@ function init() {
     formUIUpdate();
     getHistory();
     setInterval(function() { updateDatas(); }, 15000);
-  
+
 }
 
 function updateDatas() {
@@ -328,6 +395,7 @@ function updateDatas() {
     getExchangeRate("btc");
     getExchangeRate("xrp");
     getHistory();
+    maxValue();
 
 }
 
@@ -343,62 +411,23 @@ function getChartData(jsonData) {
 }
 
 function updateChart() {
-    let eth = getChartData(currentRateEth);
-    let btc = getChartData(currentRateBtc);
-    let xrp = getChartData(currentRateXrp);
-
-    var ctx = document.getElementById('ethCurrent').getContext('2d');
-    if(myChart1) myChart1.destroy();
-     myChart1 = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: eth.keys,
-            datasets: [{
-                label: 'Etheriumnak: ' + currentRateEth.currentRate + "$",
-                data: eth.values,
-                backgroundColor: 'rgba(100, 159, 64, 0.2)',
-                borderColor: 'rgba(100, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        }
-
-
+    currentRates.forEach(c =>{
+      var chart = c.type + 'Current';
+      let cCur = getChartData(c);
+        var ctx = document.getElementById(chart).getContext('2d');
+        if(window[ c.type+'chart'])  window[c.type+'chart'].destroy();
+         window[ c.type+'chart'] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: cCur.keys,
+                datasets: [{
+                    label: currents.find(obj => obj.type === c.type).label + " " + c.value + "$",
+                    data: cCur.values,
+                    backgroundColor: "rgba(54, 162, 235,0.2)",
+                    borderColor: "rgba(54, 162, 235,1)",
+                    borderWidth: 1
+                }]
+            }
+        });
     });
-
-    var ctx = document.getElementById('btcCurrent').getContext('2d');
-    if(myChart2) myChart2.destroy();
-     myChart2 = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: btc.keys,
-            datasets: [{
-                label: 'Bitcoin: ' + currentRateBtc.currentRate + "$",
-                data: btc.values,
-                backgroundColor: 'rgba(100, 159, 64, 0.2)',
-                borderColor: 'rgba(100, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        }
-
-
-    });
-
-    var ctx = document.getElementById('xrpCurrent').getContext('2d');
-    if(myChart3) myChart3.destroy();
-    myChart3 = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: xrp.keys,
-            datasets: [{
-                label: 'XRP: ' + currentRateXrp.currentRate + "$",
-                data: xrp.values,
-                backgroundColor: 'rgba(100, 159, 64, 0.2)',
-                borderColor: 'rgba(100, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        }
-
-
-    });
-
 }
