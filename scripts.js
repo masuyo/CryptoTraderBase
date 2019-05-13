@@ -111,7 +111,6 @@ function getExchangeRate(valuta) {
 
                   } finally {
                     updateChart();                  
-                });
                   }
             }
         }
